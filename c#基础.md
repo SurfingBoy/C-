@@ -407,3 +407,431 @@ public static string uploadimgcpcover(HttpRequest request)
 }
 #endregion
 ```
+
+### 3.防sql注入
+
+```
+#region 防sql注入过滤
+/// <summary>
+/// sql关键字过滤
+/// </summary>
+/// <param name="InText"></param>
+/// <returns></returns>
+public static bool SqlFilter(string InText)
+{
+    string word = "and|or|exec|sp_executesql|insert|select|delete|drop|update|chr|mid|master|truncate|char|declare|join|cmd|;|'|%|=|<|>|--|xp_cmdshell";
+    if (InText == null)
+        return false;
+    foreach (string i in word.Split('|'))
+    {
+        if ((InText.ToLower().IndexOf(i + " ") > -1) || (InText.ToLower().IndexOf(" " + i) > -1))
+        {
+            return true;
+        }
+    }
+    return false;
+}
+#endregion
+```
+
+### 4.Json字符串转换为 DataTable数据集合
+
+```
+#region Json字符串转换为 DataTable数据集合
+/// <summary>
+/// Json 字符串 转换为 DataTable数据集合
+/// </summary>
+/// <param name="json"></param>
+/// <returns></returns>
+public DataTable ToDataTable(string json)
+{
+    DataTable dataTable = new DataTable();  //实例化
+    DataTable result;
+    try
+    {
+        JavaScriptSerializer javaScriptSerializer = new JavaScriptSerializer();
+        javaScriptSerializer.MaxJsonLength = Int32.MaxValue; //取得最大数值
+        ArrayList arrayList = javaScriptSerializer.Deserialize<ArrayList>(json);
+        if (arrayList.Count > 0)
+        {
+            foreach (Dictionary<string, object> dictionary in arrayList)
+            {
+                if (dictionary.Keys.Count<string>() == 0)
+                {
+                    result = dataTable;
+                    return result;
+                }
+                //Columns
+                if (dataTable.Columns.Count == 0)
+                {
+                    foreach (string current in dictionary.Keys)
+                    {
+                        if (current != "data")
+                            dataTable.Columns.Add(current, dictionary[current].GetType());
+                        else
+                        {
+                            ArrayList list = dictionary[current] as ArrayList;
+                            foreach (Dictionary<string, object> dic in list)
+                            {
+                                foreach (string key in dic.Keys)
+                                {
+                                    dataTable.Columns.Add(key, dic[key].GetType());
+                                }
+                                break;
+                            }
+                        }
+                    }
+                }
+                //Rows
+                ArrayList aList = new ArrayList();
+                foreach (string current in dictionary.Keys)
+                {
+                    if (current != "data")
+                    {
+                        aList.Add(dictionary[current].ToString());
+                    }
+                    else
+                    {
+                        ArrayList list = dictionary[current] as ArrayList;
+                        foreach (Dictionary<string, object> dic in list)
+                        {
+                            DataRow dataRow = dataTable.NewRow();
+
+                            for (int i = 0; i < aList.Count; i++)
+                            {
+                                dataRow[i] = aList[i];
+                            }
+                            foreach (string key in dic.Keys)
+                            {
+                                dataRow[key] = dic[key];
+                            }
+                            dataTable.Rows.Add(dataRow);
+                        }
+                    }
+                }
+            }
+        }
+    }
+    catch
+    {
+    }
+    result = dataTable;
+    return result;
+}
+#endregion
+```
+
+### 5.两层Json字符串转换为 DataTable数据集合
+
+```
+#region 两层Json字符串转换为 DataTable数据集合
+/// <summary>
+/// 两层Json字符串转换为 DataTable数据集合
+/// </summary>
+/// <param name="jsonstr"></param>
+/// <returns></returns>
+public DataTable JsonToDataTable2(string jsonstr)
+{
+    DataTable dataTable = new DataTable();  //实例化
+    DataTable result;
+    try
+    {
+        JavaScriptSerializer javaScriptSerializer = new JavaScriptSerializer();
+        javaScriptSerializer.MaxJsonLength = Int32.MaxValue; //取得最大数值
+        ArrayList arrayList = javaScriptSerializer.Deserialize<ArrayList>(jsonstr);
+        if (arrayList.Count > 0)
+        {
+            foreach (Dictionary<string, object> dictionary in arrayList)
+            {
+                if (dictionary.Keys.Count<string>() == 0)
+                {
+                    result = dataTable;
+                    return result;
+                }
+                //Columns
+                if (dataTable.Columns.Count == 0)
+                {
+                    foreach (string current in dictionary.Keys)
+                    {
+                        if (current != "data")
+                            dataTable.Columns.Add(current, dictionary[current].GetType());
+                        else
+                        {
+                            ArrayList list = dictionary[current] as ArrayList;
+                            foreach (Dictionary<string, object> dic in list)
+                            {
+                                foreach (string key in dic.Keys)
+                                {
+                                    dataTable.Columns.Add(key, dic[key].GetType());
+                                }
+                                break;
+                            }
+                        }
+                    }
+                }
+                //Rows
+                ArrayList aList = new ArrayList();
+                foreach (string current in dictionary.Keys)
+                {
+                    if (current != "data")
+                    {
+                        aList.Add(dictionary[current].ToString());
+                    }
+                    else
+                    {
+                        ArrayList list = dictionary[current] as ArrayList;
+                        foreach (Dictionary<string, object> dic in list)
+                        {
+                            DataRow dataRow = dataTable.NewRow();
+                            for (int i = 0; i < aList.Count; i++)
+                            {
+                                dataRow[i] = aList[i];
+                            }
+                            foreach (string key in dic.Keys)
+                            {
+                                dataRow[key] = dic[key];
+                            }
+                            dataTable.Rows.Add(dataRow);
+                        }
+                    }
+                }
+            }
+        }
+    }
+    catch
+    {
+    }
+    result = dataTable;
+    return result;
+}
+#endregion
+```
+
+### 6.获取随机数
+
+```
+#region 获取随机字符串
+/// <summary>
+///获取随机字符串
+/// </summary>
+public static string getStr(bool b, int n)//b：是否有复杂字符，n：生成的字符串长度
+
+{
+
+    string str = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    if (b == true)
+    {
+        str += "!\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~";//复杂字符
+    }
+    StringBuilder SB = new StringBuilder();
+    Random rd = new Random();
+    for (int i = 0; i < n; i++)
+    {
+        SB.Append(str.Substring(rd.Next(0, str.Length), 1));
+    }
+    return SB.ToString();
+
+}
+#endregion
+```
+
+### 7.获取二维码
+
+```
+#region 获取二维码
+/// <summary>
+/// 获取二维码
+/// </summary>
+/// <returns></returns>
+public HttpResponseMessage GetQrCode( string url,string id,int size)
+{
+    if (url != "" &&url!=null && id != "" &&id!=null)
+    {
+        string qrcodeurl = url + "?id=" + id;
+        System.Drawing.Image image = CreateQRCode(qrcodeurl,
+         QRCodeEncoder.ENCODE_MODE.BYTE,
+         QRCodeEncoder.ERROR_CORRECTION.M,
+         8,
+         6,
+         size,
+         5, Color.Green);
+        System.IO.MemoryStream ms = new System.IO.MemoryStream();
+        image.Save(ms, System.Drawing.Imaging.ImageFormat.Png);
+
+        byte[] img = new byte[ms.Length];
+        ms.Position = 0;
+        ms.Read(img, 0, Convert.ToInt32(ms.Length));
+        ms.Close();
+        var resp = new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new ByteArrayContent(img)
+        };
+        resp.Content.Headers.ContentType = new MediaTypeHeaderValue("image/jpg");
+        return resp;
+    }
+    else
+    {
+        var resp = new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new ByteArrayContent(System.Text.Encoding.Default.GetBytes("参数不完整"))
+        };
+        resp.Content.Headers.ContentType = new MediaTypeHeaderValue("text/plain");
+        return resp;
+    }
+}
+
+/// <summary>
+/// CreateQRCode
+/// </summary>
+/// <param name="Content"></param>
+/// <param name="QRCodeEncodeMode"></param>
+/// <param name="QRCodeErrorCorrect"></param>
+/// <param name="QRCodeVersion"></param>
+/// <param name="QRCodeScale"></param>
+/// <param name="size"></param>
+/// <param name="border"></param>
+/// <param name="codeEyeColor"></param>
+/// <returns></returns>
+private System.Drawing.Image CreateQRCode(string Content, QRCodeEncoder.ENCODE_MODE QRCodeEncodeMode, QRCodeEncoder.ERROR_CORRECTION QRCodeErrorCorrect, int QRCodeVersion, int QRCodeScale, int size, int border, Color codeEyeColor)
+{
+    QRCodeEncoder qrCodeEncoder = new QRCodeEncoder();
+    qrCodeEncoder.QRCodeEncodeMode = QRCodeEncodeMode;
+    qrCodeEncoder.QRCodeErrorCorrect = QRCodeErrorCorrect;
+    qrCodeEncoder.QRCodeScale = QRCodeScale;
+    qrCodeEncoder.QRCodeVersion = QRCodeVersion;
+
+    System.Drawing.Image image = qrCodeEncoder.Encode(Content);
+
+    #region 根据设定的目标图片尺寸调整二维码QRCodeScale设置，并添加边框
+    if (size > 0)
+    {
+        //当设定目标图片尺寸大于生成的尺寸时，逐步增大方格尺寸
+        #region 当设定目标图片尺寸大于生成的尺寸时，逐步增大方格尺寸
+        while (image.Width < size)
+        {
+            qrCodeEncoder.QRCodeScale++;
+            System.Drawing.Image imageNew = qrCodeEncoder.Encode(Content);
+            if (imageNew.Width < size)
+            {
+                image = new System.Drawing.Bitmap(imageNew);
+                imageNew.Dispose();
+                imageNew = null;
+            }
+            else
+            {
+                qrCodeEncoder.QRCodeScale--; //新尺寸未采用，恢复最终使用的尺寸
+                imageNew.Dispose();
+                imageNew = null;
+                break;
+            }
+        }
+        #endregion
+
+        //当设定目标图片尺寸小于生成的尺寸时，逐步减小方格尺寸
+        #region 当设定目标图片尺寸小于生成的尺寸时，逐步减小方格尺寸
+        while (image.Width > size && qrCodeEncoder.QRCodeScale > 1)
+        {
+            qrCodeEncoder.QRCodeScale--;
+            System.Drawing.Image imageNew = qrCodeEncoder.Encode(Content);
+            image = new System.Drawing.Bitmap(imageNew);
+            imageNew.Dispose();
+            imageNew = null;
+            if (image.Width < size)
+            {
+                break;
+            }
+        }
+        #endregion
+
+        //根据参数设置二维码图片白边的最小宽度（按需缩小）
+        #region 根据参数设置二维码图片白边的最小宽度
+        if (image.Width <= size && border > 0)
+        {
+            while (image.Width <= size && size - image.Width < border * 2 && qrCodeEncoder.QRCodeScale > 1)
+            {
+                qrCodeEncoder.QRCodeScale--;
+                System.Drawing.Image imageNew = qrCodeEncoder.Encode(Content);
+                image = new System.Drawing.Bitmap(imageNew);
+                imageNew.Dispose();
+                imageNew = null;
+            }
+        }
+        #endregion
+
+        //已经确认二维码图像，为图像染色修饰
+        if (true)
+        {
+            //定位点方块边长
+            int beSize = qrCodeEncoder.QRCodeScale * 3;
+
+            int bep1_l = qrCodeEncoder.QRCodeScale * 2;
+            int bep1_t = qrCodeEncoder.QRCodeScale * 2;
+
+            int bep2_l = image.Width - qrCodeEncoder.QRCodeScale * 5 - 1;
+            int bep2_t = qrCodeEncoder.QRCodeScale * 2;
+
+            int bep3_l = qrCodeEncoder.QRCodeScale * 2;
+            int bep3_t = image.Height - qrCodeEncoder.QRCodeScale * 5 - 1;
+
+            int bep4_l = image.Width - qrCodeEncoder.QRCodeScale * 7 - 1;
+            int bep4_t = image.Height - qrCodeEncoder.QRCodeScale * 7 - 1;
+
+            System.Drawing.Graphics graphic0 = System.Drawing.Graphics.FromImage(image);
+
+            // Create solid brush. 
+            SolidBrush blueBrush = new SolidBrush(codeEyeColor);
+
+            // Fill rectangle to screen. 
+            graphic0.FillRectangle(blueBrush, bep1_l, bep1_t, beSize, beSize);
+            graphic0.FillRectangle(blueBrush, bep2_l, bep2_t, beSize, beSize);
+            graphic0.FillRectangle(blueBrush, bep3_l, bep3_t, beSize, beSize);
+            graphic0.FillRectangle(blueBrush, bep4_l, bep4_t, qrCodeEncoder.QRCodeScale, qrCodeEncoder.QRCodeScale);
+        }
+
+        //当目标图片尺寸大于二维码尺寸时，将二维码绘制在目标尺寸白色画布的中心位置
+        #region 如果目标尺寸大于生成的图片尺寸，将二维码绘制在目标尺寸白色画布的中心位置
+        if (image.Width < size)
+        {
+            //新建空白绘图
+            System.Drawing.Bitmap panel = new System.Drawing.Bitmap(size, size);
+            System.Drawing.Graphics graphic0 = System.Drawing.Graphics.FromImage(panel);
+            int p_left = 0;
+            int p_top = 0;
+            if (image.Width <= size) //如果原图比目标形状宽
+            {
+                p_left = (size - image.Width) / 2;
+            }
+            if (image.Height <= size)
+            {
+                p_top = (size - image.Height) / 2;
+            }
+
+            //将生成的二维码图像粘贴至绘图的中心位置
+            graphic0.DrawImage(image, p_left, p_top, image.Width, image.Height);
+            image = new System.Drawing.Bitmap(panel);
+            panel.Dispose();
+            panel = null;
+            graphic0.Dispose();
+            graphic0 = null;
+        }
+        #endregion
+    }
+    #endregion
+    return image;
+
+//var imgPath = @"D:\ITdosCom\Images\itdos.jpg";
+////从图片中读取byte  
+//var imgByte = File.ReadAllBytes(imgPath);
+////从图片中读取流  
+//var imgStream = new MemoryStream(File.ReadAllBytes(imgPath));
+//var resp = new HttpResponseMessage(HttpStatusCode.OK)
+//{
+//    Content = new ByteArrayContent(imgByte)
+//    //或者  
+//    //Content = new StreamContent(stream)  
+//};
+//resp.Content.Headers.ContentType = new MediaTypeHeaderValue("image/jpg");
+//return resp;
+} 
+#endregion
+```
